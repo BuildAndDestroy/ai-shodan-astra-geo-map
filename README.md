@@ -42,7 +42,7 @@ A sophisticated web-based visualization tool for mapping and analyzing Astra Lin
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/astra-geo-mapper.git
+   git clone https://github.com/BuildAndDestroy/astra-geo-mapper.git
    cd astra-geo-mapper
    ```
 
@@ -221,15 +221,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Issues**: Report bugs via [GitHub Issues](https://github.com/yourusername/astra-geo-mapper/issues)
-- **Discussions**: Join conversations in [Discussions](https://github.com/yourusername/astra-geo-mapper/discussions)
-- **Documentation**: Check the [Wiki](https://github.com/yourusername/astra-geo-mapper/wiki) for detailed guides
+- **Issues**: Report bugs via [GitHub Issues](https://github.com/BuildAndDestroy/astra-geo-mapper/issues)
+- **Discussions**: Join conversations in [Discussions](https://github.com/BuildAndDestroy/astra-geo-mapper/discussions)
+- **Documentation**: Check the [Wiki](https://github.com/BuildAndDestroy/astra-geo-mapper/wiki) for detailed guides
 
 ## 📊 Project Stats
 
-![GitHub stars](https://img.shields.io/github/stars/yourusername/astra-geo-mapper?style=social)
-![GitHub forks](https://img.shields.io/github/forks/yourusername/astra-geo-mapper?style=social)
-![GitHub issues](https://img.shields.io/github/issues/yourusername/astra-geo-mapper)
+![GitHub stars](https://img.shields.io/github/stars/BuildAndDestroy/astra-geo-mapper?style=social)
+![GitHub forks](https://img.shields.io/github/forks/BuildAndDestroy/astra-geo-mapper?style=social)
+![GitHub issues](https://img.shields.io/github/issues/BuildAndDestroy/astra-geo-mapper)
 
 ## 🙏 Acknowledgments
 
