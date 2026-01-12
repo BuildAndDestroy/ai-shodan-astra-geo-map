@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Security Headers -->
+    <!-- Note: For production, CSP should be set via HTTP headers, not meta tags -->
+    <!-- Meta tag CSP has limited browser support. Use server headers when possible. -->
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self'; 
+                   script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
+                   style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
+                   img-src 'self' data: https: blob:; 
+                   connect-src 'self' https://*.basemaps.cartocdn.com https://*.cartocdn.com;
+                   font-src 'self' data: https:;
+                   frame-ancestors 'none';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+    
+    <title>Astra Linux Threat Geo Mapper</title>
+    
+    <!-- Leaflet CSS with SRI (Subresource Integrity) for supply chain attack protection -->
+    <link rel="stylesheet" 
+          href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+          integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="astra_geo_mapper.css" />
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 Astra Linux Threat Geo Mapper</h1>
+            <p>Visualize Astra Linux systems detected by Shodan across the globe</p>
+        </div>
+
+        <div class="controls">
+            <div class="input-section">
+                <h3>📊 JSON Data Input</h3>
+                <textarea id="jsonInput" placeholder='Paste your geo JSON data here...
+
+Example format:
+[
+  {
+    "ip": "5.141.96.34",
+    "country": "Russian Federation", 
+    "city": "Uray",
+    "latitude": 60.13044,
+    "longitude": 64.78896,
+    "port": 22,
+    "ssh_info": "Product: OpenSSH, Version: 7.4p1...",
+    "timestamp": "2025-08-12T22:10:31.501991"
+  }
+]'></textarea>
+                <div class="button-group">
+                    <button id="generateBtn">🗺️ Generate Map</button>
+                    <button id="loadSampleBtn">📋 Load Sample</button>
+                    <button id="clearBtn" class="clear-btn">🗑️ Clear All</button>
+                </div>
+                <div id="status"></div>
+            </div>
+
+            <div class="stats-section">
+                <h3>📈 Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalHosts">0</div>
+                        <div class="stat-label">Total Hosts</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="uniqueCountries">0</div>
+                        <div class="stat-label">Countries</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="uniquePorts">0</div>
+                        <div class="stat-label">Unique Ports</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="riskScore">0</div>
+                        <div class="stat-label">Risk Score</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+        
+        <div class="legend">
+            <h4>🎯 Threat Levels</h4>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff4757;"></div>
+                <span>Critical (Multiple ports/services)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ffa502;"></div>
+                <span>High (Non-standard SSH ports)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2ed573;"></div>
+                <span>Medium (Standard SSH on 22)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3742fa;"></div>
+                <span>Low (HTTPS/Web services)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS with SRI (Subresource Integrity) for supply chain attack protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
+            integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+    <script>
+        // Security: Input size limits
+        const MAX_INPUT_SIZE = 10 * 1024 * 1024; // 10MB
+        const MAX_ARRAY_LENGTH = 100000; // Maximum number of data points
+        
+        // Security: Logging function (can be extended to send to server)
+        function logSecurityEvent(eventType, details) {
+            const timestamp = new Date().toISOString();
+            console.log(`[SECURITY] ${timestamp} - ${eventType}:`, details);
+            // In production, send to logging service
+        }
+
+        // Security: HTML entity encoding to prevent XSS
+        function escapeHtml(text) {
+            if (text === null || text === undefined) {
+                return '';
+            }
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
+        }
+
+        // Security: Validate and sanitize input data point
+        function validateDataPoint(point, index) {
+            const errors = [];
+            const warnings = [];
+            
+            // Type validation
+            if (typeof point !== 'object' || point === null || Array.isArray(point)) {
+                errors.push(`Point ${index}: Must be an object`);
+                return { valid: false, errors, warnings };
+            }
+
+            // Prevent prototype pollution - check only own properties
+            const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+            for (const key of dangerousKeys) {
+                if (Object.prototype.hasOwnProperty.call(point, key)) {
+                    errors.push(`Point ${index}: Invalid property name detected: ${key}`);
+                    return { valid: false, errors, warnings };
+                }
+            }
+
+            // Validate IP address format (basic) - optional field
+            if (point.ip !== undefined && point.ip !== null) {
+                if (typeof point.ip !== 'string') {
+                    point.ip = String(point.ip); // Convert to string
+                }
+                if (point.ip.length > 45) { // IPv6 max length
+                    point.ip = point.ip.substring(0, 45);
+                    warnings.push(`Point ${index}: IP address truncated to 45 characters`);
+                }
+            }
+
+            // Validate coordinates - required fields
+            if (point.latitude !== undefined && point.latitude !== null) {
+                const lat = Number(point.latitude);
+                if (isNaN(lat)) {
+                    errors.push(`Point ${index}: Latitude must be a valid number`);
+                } else if (lat < -90 || lat > 90) {
+                    errors.push(`Point ${index}: Latitude must be between -90 and 90`);
+                } else {
+                    point.latitude = lat; // Normalize to number
+                }
+            } else {
+                errors.push(`Point ${index}: Missing required field 'latitude'`);
+            }
+
+            if (point.longitude !== undefined && point.longitude !== null) {
+                const lon = Number(point.longitude);
+                if (isNaN(lon)) {
+                    errors.push(`Point ${index}: Longitude must be a valid number`);
+                } else if (lon < -180 || lon > 180) {
+                    errors.push(`Point ${index}: Longitude must be between -180 and 180`);
+                } else {
+                    point.longitude = lon; // Normalize to number
+                }
+            } else {
+                errors.push(`Point ${index}: Missing required field 'longitude'`);
+            }
+
+            // Validate port number - optional field
+            if (point.port !== undefined && point.port !== null) {
+                const port = Number(point.port);
+                if (isNaN(port)) {
+                    warnings.push(`Point ${index}: Port is not a valid number, ignoring`);
+                    delete point.port;
+                } else if (port < 1 || port > 65535) {
+                    warnings.push(`Point ${index}: Port ${port} is out of range (1-65535), ignoring`);
+                    delete point.port;
+                } else if (!Number.isInteger(port)) {
+                    point.port = Math.floor(port); // Round to integer
+                    warnings.push(`Point ${index}: Port rounded to integer`);
+                } else {
+                    point.port = port; // Normalize to number
+                }
+            }
+
+            // Validate string fields (prevent prototype pollution) - all optional
+            const stringFields = ['country', 'city', 'ssh_info', 'timestamp'];
+            for (const field of stringFields) {
+                if (point[field] !== undefined && point[field] !== null) {
+                    if (typeof point[field] !== 'string') {
+                        point[field] = String(point[field]); // Convert to string
+                    }
+                    // Limit string length to prevent DoS
+                    if (point[field].length > 1000) {
+                        point[field] = point[field].substring(0, 1000);
+                        warnings.push(`Point ${index}: ${field} truncated to 1000 characters`);
+                    }
+                }
+            }
+
+            return {
+                valid: errors.length === 0,
+                errors,
+                warnings,
+                sanitized: point
+            };
+        }
+
+        let map;
+        let markersLayer;
+        let currentData = [];
+
+        function initMap() {
+            // Check if already initialized
+            if (map && markersLayer) {
+                return;
+            }
+            
+            // Check if Leaflet is loaded - wait a bit if script is still loading
+            if (typeof L === 'undefined') {
+                // Check if script tag exists
+                const scriptTags = document.querySelectorAll('script[src*="leaflet"]');
+                if (scriptTags.length > 0) {
+                    // Script tag exists but L is undefined - might still be loading
+                    logSecurityEvent('MAP_INIT_ERROR', { error: 'Leaflet library not loaded - script may still be loading' });
+                    showStatus('⏳ Waiting for map library to load...', false);
+                    // Try again after a short delay
+                    setTimeout(() => {
+                        if (typeof L !== 'undefined') {
+                            initMap(); // Retry initialization
+                        } else {
+                            showStatus('❌ Map library failed to load. Please check your internet connection and refresh the page.', true);
+                        }
+                    }, 1000);
+                    return;
+                } else {
+                    logSecurityEvent('MAP_INIT_ERROR', { error: 'Leaflet script tag not found' });
+                    showStatus('❌ Map library script not found. Please refresh the page.', true);
+                    return;
+                }
+            }
+            
+            try {
+                map = L.map('map', {
+                    zoomControl: true,
+                    scrollWheelZoom: true
+                }).setView([55.7558, 37.6173], 3);
+
+                // Dark theme tile layer
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                    subdomains: 'abcd',
+                    maxZoom: 19
+                }).addTo(map);
+
+                markersLayer = L.layerGroup().addTo(map);
+            } catch (error) {
+                logSecurityEvent('MAP_INIT_ERROR', { error: error.message });
+                showStatus('❌ Failed to initialize map: ' + error.message, true);
+            }
+        }
+
+        // Security: Safe status display using textContent
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = ''; // Clear first
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isError ? 'error' : 'success';
+            messageDiv.textContent = message; // Safe: uses textContent, not innerHTML
+            
+            statusDiv.appendChild(messageDiv);
+            setTimeout(() => {
+                if (statusDiv.contains(messageDiv)) {
+                    statusDiv.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
+
+        function getThreatLevel(data) {
+            let score = 0;
+            
+            // Port-based scoring
+            if (data.port === 22) score += 1;      // Standard SSH
+            else if (data.port === 2222) score += 2; // Non-standard SSH
+            else if ([80, 443, 8080, 8443].includes(data.port)) score += 1; // Web services
+            else score += 3; // Other ports are more suspicious
+
+            // SSH info analysis
+            if (data.ssh_info && typeof data.ssh_info === 'string' && data.ssh_info.includes('OpenSSH')) {
+                if (data.ssh_info.includes('astra')) score += 2;
+                if (data.ssh_info.includes('deb9u6astra6')) score += 1;
+            }
+
+            // Geographic risk (simplified)
+            const highRiskCountries = ['Russian Federation', 'China', 'North Korea'];
+            if (highRiskCountries.includes(data.country)) score += 1;
+
+            return Math.min(score, 4); // Cap at 4
+        }
+
+        function getMarkerColor(threatLevel) {
+            const colors = {
+                1: '#3742fa',  // Low - Blue
+                2: '#2ed573',  // Medium - Green  
+                3: '#ffa502',  // High - Orange
+                4: '#ff4757'   // Critical - Red
+            };
+            return colors[threatLevel] || '#747d8c';
+        }
+
+        // Security: Safe popup content creation using DOM methods
+        function createPopupContent(data) {
+            const threatLevel = getThreatLevel(data);
+            const threatLabels = ['', 'Low', 'Medium', 'High', 'Critical'];
+            
+            // Create DOM elements instead of template literals to prevent XSS
+            const container = document.createElement('div');
+            container.style.minWidth = '250px';
+            container.style.fontFamily = "'Segoe UI', sans-serif";
+
+            // IP header
+            const header = document.createElement('h3');
+            header.style.color = getMarkerColor(threatLevel);
+            header.style.margin = '0 0 10px 0';
+            header.textContent = `🎯 ${escapeHtml(data.ip || 'N/A')}`;
+            container.appendChild(header);
+
+            // Location
+            const location = document.createElement('div');
+            location.style.margin = '5px 0';
+            location.innerHTML = '<strong>📍 Location:</strong> ' + 
+                                escapeHtml(data.city || 'N/A') + ', ' + 
+                                escapeHtml(data.country || 'N/A');
+            container.appendChild(location);
+
+            // Port
+            const port = document.createElement('div');
+            port.style.margin = '5px 0';
+            port.innerHTML = '<strong>🔌 Port:</strong> ' + escapeHtml(String(data.port || 'N/A'));
+            container.appendChild(port);
+
+            // SSH Info
+            if (data.ssh_info) {
+                const sshInfo = document.createElement('div');
+                sshInfo.style.margin = '5px 0';
+                sshInfo.innerHTML = '<strong>🔐 SSH Info:</strong><br/>' + escapeHtml(data.ssh_info);
+                container.appendChild(sshInfo);
+            }
+
+            // Timestamp
+            if (data.timestamp) {
+                const timestamp = document.createElement('div');
+                timestamp.style.margin = '5px 0';
+                try {
+                    const date = new Date(data.timestamp);
+                    timestamp.innerHTML = '<strong>📅 Timestamp:</strong> ' + escapeHtml(date.toLocaleString());
+                } catch (e) {
+                    timestamp.innerHTML = '<strong>📅 Timestamp:</strong> ' + escapeHtml(data.timestamp);
+                }
+                container.appendChild(timestamp);
+            }
+
+            // Threat Level
+            const threatDiv = document.createElement('div');
+            threatDiv.style.margin = '10px 0';
+            threatDiv.style.padding = '5px';
+            threatDiv.style.background = getMarkerColor(threatLevel) + '20';
+            threatDiv.style.borderRadius = '5px';
+            const threatStrong = document.createElement('strong');
+            threatStrong.style.color = getMarkerColor(threatLevel);
+            threatStrong.textContent = `⚠️ Threat Level: ${threatLabels[threatLevel]}`;
+            threatDiv.appendChild(threatStrong);
+            container.appendChild(threatDiv);
+
+            return container;
+        }
+
+        function processData() {
+            const input = document.getElementById('jsonInput').value.trim();
+            
+            if (!input) {
+                showStatus('❌ Please paste JSON data first', true);
+                return;
+            }
+
+            // Security: Check input size
+            if (input.length > MAX_INPUT_SIZE) {
+                logSecurityEvent('INPUT_SIZE_EXCEEDED', { size: input.length });
+                showStatus(`❌ Input too large. Maximum size is ${MAX_INPUT_SIZE / 1024 / 1024}MB`, true);
+                return;
+            }
+
+            try {
+                // Security: Parse JSON with reviver to prevent prototype pollution
+                const reviver = (key, value) => {
+                    // Prevent prototype pollution
+                    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                        logSecurityEvent('PROTOTYPE_POLLUTION_ATTEMPT', { key });
+                        return undefined;
+                    }
+                    return value;
+                };
+
+                let parsedData = JSON.parse(input, reviver);
+                
+                if (!Array.isArray(parsedData)) {
+                    throw new Error('Data must be an array');
+                }
+
+                // Security: Check array length
+                if (parsedData.length > MAX_ARRAY_LENGTH) {
+                    logSecurityEvent('ARRAY_LENGTH_EXCEEDED', { length: parsedData.length });
+                    showStatus(`❌ Too many data points. Maximum is ${MAX_ARRAY_LENGTH}`, true);
+                    return;
+                }
+
+                // Security: Validate and sanitize all data points
+                const validatedData = [];
+                const validationErrors = [];
+                const validationWarnings = [];
+
+                parsedData.forEach((point, index) => {
+                    // Create a copy to avoid modifying the original
+                    const pointCopy = JSON.parse(JSON.stringify(point));
+                    const validation = validateDataPoint(pointCopy, index);
+                    if (validation.valid) {
+                        validatedData.push(validation.sanitized);
+                        if (validation.warnings && validation.warnings.length > 0) {
+                            validationWarnings.push(...validation.warnings);
+                        }
+                    } else {
+                        validationErrors.push(...validation.errors);
+                    }
+                });
+
+                // Log warnings (non-fatal)
+                if (validationWarnings.length > 0) {
+                    logSecurityEvent('VALIDATION_WARNINGS', { 
+                        count: validationWarnings.length,
+                        warnings: validationWarnings.slice(0, 5) // Log first 5
+                    });
+                }
+
+                // Log errors (fatal)
+                if (validationErrors.length > 0) {
+                    logSecurityEvent('VALIDATION_ERRORS', { 
+                        count: validationErrors.length,
+                        errors: validationErrors.slice(0, 5) // Log first 5
+                    });
+                    // Show warning but don't block if we have some valid data
+                    if (validatedData.length > 0) {
+                        showStatus(`⚠️ ${validationErrors.length} data point(s) had errors and were skipped. ${validatedData.length} valid point(s) loaded.`, true);
+                    }
+                }
+
+                if (validatedData.length === 0) {
+                    const errorMsg = validationErrors.length > 0 
+                        ? `❌ No valid data points found. ${validationErrors.length} error(s) detected. Check console for details.`
+                        : '❌ No valid data points found after validation';
+                    showStatus(errorMsg, true);
+                    return;
+                }
+
+                // Ensure map is initialized before proceeding
+                if (!map || !markersLayer) {
+                    initMap();
+                    // If still not initialized, show error
+                    if (!map || !markersLayer) {
+                        showStatus('❌ Map not initialized. Please wait a moment and try again.', true);
+                        return;
+                    }
+                }
+
+                currentData = validatedData;
+                markersLayer.clearLayers();
+                
+                let validPoints = 0;
+                const countries = new Set();
+                const ports = new Set();
+                let totalRiskScore = 0;
+
+                validatedData.forEach(point => {
+                    try {
+                        const threatLevel = getThreatLevel(point);
+                        totalRiskScore += threatLevel;
+                        
+                        const marker = L.circleMarker([point.latitude, point.longitude], {
+                            color: '#ffffff',
+                            fillColor: getMarkerColor(threatLevel),
+                            fillOpacity: 0.8,
+                            weight: 2,
+                            radius: 8 + (threatLevel * 2)
+                        });
+
+                        marker.bindPopup(createPopupContent(point));
+                        markersLayer.addLayer(marker);
+                        
+                        validPoints++;
+                        if (point.country) countries.add(point.country);
+                        if (point.port) ports.add(point.port);
+                    } catch (error) {
+                        logSecurityEvent('MARKER_CREATION_ERROR', { 
+                            error: error.message,
+                            point: { ip: point.ip, lat: point.latitude, lon: point.longitude }
+                        });
+                    }
+                });
+
+                // Update statistics
+                document.getElementById('totalHosts').textContent = validPoints;
+                document.getElementById('uniqueCountries').textContent = countries.size;
+                document.getElementById('uniquePorts').textContent = ports.size;
+                document.getElementById('riskScore').textContent = validPoints > 0 
+                    ? (Math.round((totalRiskScore / validPoints) * 100) / 100).toFixed(2)
+                    : '0';
+
+                if (validPoints > 0) {
+                    try {
+                        // Fit map to show all markers
+                        const group = new L.featureGroup(markersLayer.getLayers());
+                        if (group.getLayers().length > 0) {
+                            map.fitBounds(group.getBounds().pad(0.1));
+                        }
+                        showStatus(`✅ Successfully mapped ${validPoints} Astra Linux systems across ${countries.size} countries`);
+                        logSecurityEvent('MAP_GENERATED', { 
+                            points: validPoints,
+                            countries: countries.size
+                        });
+                    } catch (error) {
+                        logSecurityEvent('MAP_BOUNDS_ERROR', { error: error.message });
+                        showStatus('✅ Data loaded, but map bounds calculation failed', true);
+                    }
+                } else {
+                    showStatus('⚠️ No valid coordinate data found in JSON', true);
+                }
+
+            } catch (error) {
+                logSecurityEvent('JSON_PARSE_ERROR', { 
+                    error: error.message,
+                    inputLength: input.length
+                });
+                showStatus(`❌ Error parsing JSON: ${error.message}`, true);
+            }
+        }
+
+        function loadSampleData() {
+            const sampleData = `[
+  {
+    "ip": "5.141.96.34",
+    "country": "Russian Federation",
+    "city": "Uray", 
+    "latitude": 60.13044,
+    "longitude": 64.78896,
+    "port": 22,
+    "ssh_info": "Product: OpenSSH, Version: 7.4p1 Debian 10+deb9u6astra6, Type: ssh-rsa",
+    "timestamp": "2025-08-12T22:10:31.501991"
+  },
+  {
+    "ip": "86.102.168.35",
+    "country": "Russian Federation", 
+    "city": "Vladivostok",
+    "latitude": 43.10562,
+    "longitude": 131.87353,
+    "port": 22,
+    "ssh_info": "Product: OpenSSH, Version: 7.4p1 Debian 10+deb9u6astra6, Type: ssh-rsa",
+    "timestamp": "2025-08-12T22:09:46.563813"
+  },
+  {
+    "ip": "89.223.126.175",
+    "country": "Russian Federation",
+    "city": "Saint Petersburg", 
+    "latitude": 59.93863,
+    "longitude": 30.31413,
+    "port": 22,
+    "ssh_info": "Product: OpenSSH, Version: 7.4p1 Debian 10+deb9u6astra6, Type: ssh-rsa",
+    "timestamp": "2025-08-12T22:09:15.276973"
+  }
+]`;
+            document.getElementById('jsonInput').value = sampleData;
+            showStatus('📋 Sample data loaded - click "Generate Map" to visualize');
+        }
+
+        function clearAll() {
+            document.getElementById('jsonInput').value = '';
+            if (markersLayer && typeof markersLayer.clearLayers === 'function') {
+                try {
+                    markersLayer.clearLayers();
+                } catch (error) {
+                    logSecurityEvent('CLEAR_LAYERS_ERROR', { error: error.message });
+                }
+            }
+            
+            document.getElementById('totalHosts').textContent = '0';
+            document.getElementById('uniqueCountries').textContent = '0'; 
+            document.getElementById('uniquePorts').textContent = '0';
+            document.getElementById('riskScore').textContent = '0';
+            
+            currentData = [];
+            showStatus('🗑️ All data cleared');
+        }
+
+        // Security: Use addEventListener instead of inline handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            
+            // Attach event listeners
+            document.getElementById('generateBtn').addEventListener('click', processData);
+            document.getElementById('loadSampleBtn').addEventListener('click', loadSampleData);
+            document.getElementById('clearBtn').addEventListener('click', clearAll);
+            
+            logSecurityEvent('APP_INITIALIZED', { timestamp: new Date().toISOString() });
+        });
+    </script>
+</body>
+</html>
