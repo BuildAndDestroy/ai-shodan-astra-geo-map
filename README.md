@@ -37,6 +37,7 @@ A sophisticated web-based visualization tool for mapping and analyzing Astra Lin
 ### Prerequisites
 - Modern web browser with JavaScript enabled
 - Web server (optional, but recommended for local development)
+- Docker (optional, for containerized deployment)
 
 ### Installation
 
@@ -48,15 +49,30 @@ A sophisticated web-based visualization tool for mapping and analyzing Astra Lin
 
 2. **Launch the application:**
    
-   **Option A: Direct file opening**
+   **Option A: Docker (Recommended for Production)**
    ```bash
-   # Open directly in browser
-   open astra_geo_mapper.html
-   # or
-   firefox astra_geo_mapper.html
+   # Using docker-compose
+   docker-compose up -d
+   
+   # Or using Docker directly
+   docker build -t astra-geo-mapper .
+   docker run -d -p 8080:80 astra-geo-mapper
+   
+   # Or using Makefile
+   make build && make run
+   
+   # Then navigate to http://localhost:8080
    ```
-
-   **Option B: Local web server (recommended)**
+   
+   **Option B: Direct file opening**
+   ```bash
+   # Open secure version directly in browser
+   open astra_geo_mapper_secure.html
+   # or
+   firefox astra_geo_mapper_secure.html
+   ```
+   
+   **Option C: Local web server (recommended for development)**
    ```bash
    # Using Python 3
    python -m http.server 8000
@@ -64,8 +80,28 @@ A sophisticated web-based visualization tool for mapping and analyzing Astra Lin
    # Using Node.js
    npx http-server
    
-   # Then navigate to http://localhost:8000
+   # Then navigate to http://localhost:8000/astra_geo_mapper_secure.html
    ```
+
+### Pre-commit Hooks Setup
+
+Install pre-commit hooks for secret detection and code quality:
+
+```bash
+# Install dependencies
+pip install pre-commit detect-secrets
+
+# Install hooks
+pre-commit install
+
+# Generate secrets baseline (first time)
+make secrets-baseline
+
+# Run checks manually
+make test
+```
+
+See [README_DOCKER.md](README_DOCKER.md) for detailed Docker deployment instructions.
 
 ## 📊 Usage Guide
 
@@ -214,6 +250,61 @@ We welcome contributions! Please follow these steps:
 - Test across multiple browsers
 - Update documentation for new features
 - Ensure responsive design compatibility
+
+## 🐳 Docker Deployment
+
+For production deployment, use Docker:
+
+```bash
+# Build and run with docker-compose
+docker-compose up -d
+
+# Or build manually
+docker build -t astra-geo-mapper .
+docker run -d -p 8080:80 astra-geo-mapper
+```
+
+The Docker image includes:
+- ✅ Security headers configured in nginx
+- ✅ Non-root user execution
+- ✅ Read-only filesystem
+- ✅ Health checks
+- ✅ Minimal Alpine-based image (~15-20 MB)
+
+See [README_DOCKER.md](README_DOCKER.md) for complete Docker documentation.
+
+## 🔒 Security & CI/CD
+
+### Pre-commit Hooks
+
+The repository includes pre-commit hooks for:
+- Secret detection (detect-secrets)
+- Code quality checks
+- File validation
+- Security header verification
+
+Install with: `make install`
+
+### GitHub Actions
+
+Automated CI/CD workflows:
+- **Security Scanning**: Secret detection, security header checks
+- **Docker Build**: Automated Docker image building and testing
+- **Code Quality**: Pre-commit hooks, linting, validation
+
+Workflows run on:
+- Push to `main` branch
+- Pull requests to `main`
+- Tagged releases
+
+### Security Features
+
+- ✅ XSS protection (input sanitization)
+- ✅ Content Security Policy (CSP)
+- ✅ Subresource Integrity (SRI)
+- ✅ Security headers (X-Frame-Options, etc.)
+- ✅ Input validation
+- ✅ Secret detection in CI/CD
 
 ## 📝 License
 

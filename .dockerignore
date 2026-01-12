@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+!README.md
+LICENSE
+
+# Development files
+.pre-commit-config.yaml
+.secrets.baseline
+security_test_payloads.json
+VULNERABILITY_SCAN_REPORT.md
+SECURITY_FIXES_APPLIED.md
+SECURITY_SUMMARY.md
+QUICK_START_SECURE.md
+
+# Original insecure version (use secure version in production)
+astra_geo_mapper.html
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+bandit-report.json
