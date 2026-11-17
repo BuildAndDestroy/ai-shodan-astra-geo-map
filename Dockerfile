@@ -6,6 +6,10 @@ LABEL maintainer="Astra Geo Mapper Team"
 LABEL description="Astra Linux Threat Geo Mapper - Secure web application"
 LABEL version="1.0.0"
 
+# Security: pull in OS package security fixes that landed after the base
+# image was built (e.g. libxslt CVEs flagged by Trivy)
+RUN apk upgrade --no-cache
+
 # Security: Run as non-root user
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup
