@@ -28,7 +28,7 @@ RUN echo 'server {' > /etc/nginx/conf.d/default.conf && \
     echo '    index index.html;' >> /etc/nginx/conf.d/default.conf && \
     echo '' >> /etc/nginx/conf.d/default.conf && \
     echo '    # Security Headers' >> /etc/nginx/conf.d/default.conf && \
-    echo '    add_header Content-Security-Policy "default-src '\''self'\''; script-src '\''self'\'' '\''unsafe-inline'\'' https://cdnjs.cloudflare.com; style-src '\''self'\'' '\''unsafe-inline'\'' https://cdnjs.cloudflare.com; img-src '\''self'\'' data: https: blob:; connect-src '\''self'\'' https://*.basemaps.cartocdn.com https://*.cartocdn.com; font-src '\''self'\'' data: https:; frame-ancestors '\''none'\'';" always;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    add_header Content-Security-Policy "default-src '\''self'\''; script-src '\''self'\'' '\''unsafe-inline'\'' https://cdnjs.cloudflare.com; style-src '\''self'\'' '\''unsafe-inline'\'' https://cdnjs.cloudflare.com; img-src '\''self'\'' data: https: blob:; connect-src '\''self'\'' https://server.arcgisonline.com; font-src '\''self'\'' data: https:; frame-ancestors '\''none'\'';" always;' >> /etc/nginx/conf.d/default.conf && \
     echo '    add_header X-Content-Type-Options "nosniff" always;' >> /etc/nginx/conf.d/default.conf && \
     echo '    add_header X-Frame-Options "DENY" always;' >> /etc/nginx/conf.d/default.conf && \
     echo '    add_header X-XSS-Protection "1; mode=block" always;' >> /etc/nginx/conf.d/default.conf && \

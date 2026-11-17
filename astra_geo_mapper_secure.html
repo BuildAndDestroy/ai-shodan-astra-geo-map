@@ -12,7 +12,7 @@
                    script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
                    style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
                    img-src 'self' data: https: blob:;
-                   connect-src 'self' https://*.basemaps.cartocdn.com https://*.cartocdn.com;
+                   connect-src 'self' https://server.arcgisonline.com;
                    font-src 'self' data: https:;
                    frame-ancestors 'none';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -275,9 +275,9 @@ Example format:
                 }).setView([55.7558, 37.6173], 3);
 
                 // Dark theme tile layer
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                    subdomains: 'abcd',
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors, and the GIS user community',
+                    maxNativeZoom: 16,
                     maxZoom: 19
                 }).addTo(map);
 

@@ -325,7 +325,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - [Leaflet.js](https://leafletjs.com/) for interactive mapping capabilities
-- [CARTO](https://carto.com/) for dark theme map tiles
+- [Esri](https://www.esri.com/) for the World Dark Gray Canvas map tiles
 - [Shodan](https://shodan.io/) for network intelligence inspiration
 - The cybersecurity research community for continuous innovation
 
