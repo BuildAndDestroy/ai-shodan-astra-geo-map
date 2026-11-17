@@ -25,7 +25,7 @@ Example format:
 [
   {
     "ip": "5.141.96.34",
-    "country": "Russian Federation", 
+    "country": "Russian Federation",
     "city": "Uray",
     "latitude": 60.13044,
     "longitude": 64.78896,
@@ -66,7 +66,7 @@ Example format:
         </div>
 
         <div id="map"></div>
-        
+
         <div class="legend">
             <h4>🎯 Threat Levels</h4>
             <div class="legend-item">
@@ -120,7 +120,7 @@ Example format:
 
         function getThreatLevel(data) {
             let score = 0;
-            
+
             // Port-based scoring
             if (data.port === 22) score += 1;      // Standard SSH
             else if (data.port === 2222) score += 2; // Non-standard SSH
@@ -143,7 +143,7 @@ Example format:
         function getMarkerColor(threatLevel) {
             const colors = {
                 1: '#3742fa',  // Low - Blue
-                2: '#2ed573',  // Medium - Green  
+                2: '#2ed573',  // Medium - Green
                 3: '#ffa502',  // High - Orange
                 4: '#ff4757'   // Critical - Red
             };
@@ -153,7 +153,7 @@ Example format:
         function createPopupContent(data) {
             const threatLevel = getThreatLevel(data);
             const threatLabels = ['', 'Low', 'Medium', 'High', 'Critical'];
-            
+
             return `
                 <div style="min-width: 250px; font-family: 'Segoe UI', sans-serif;">
                     <h3 style="color: ${getMarkerColor(threatLevel)}; margin: 0 0 10px 0;">
@@ -172,7 +172,7 @@ Example format:
 
         function processData() {
             const input = document.getElementById('jsonInput').value.trim();
-            
+
             if (!input) {
                 showStatus('❌ Please paste JSON data first', true);
                 return;
@@ -180,13 +180,13 @@ Example format:
 
             try {
                 currentData = JSON.parse(input);
-                
+
                 if (!Array.isArray(currentData)) {
                     throw new Error('Data must be an array');
                 }
 
                 markersLayer.clearLayers();
-                
+
                 let validPoints = 0;
                 const countries = new Set();
                 const ports = new Set();
@@ -196,7 +196,7 @@ Example format:
                     if (point.latitude && point.longitude) {
                         const threatLevel = getThreatLevel(point);
                         totalRiskScore += threatLevel;
-                        
+
                         const marker = L.circleMarker([point.latitude, point.longitude], {
                             color: '#ffffff',
                             fillColor: getMarkerColor(threatLevel),
@@ -207,7 +207,7 @@ Example format:
 
                         marker.bindPopup(createPopupContent(point));
                         markersLayer.addLayer(marker);
-                        
+
                         validPoints++;
                         countries.add(point.country);
                         ports.add(point.port);
@@ -224,7 +224,7 @@ Example format:
                     // Fit map to show all markers
                     const group = new L.featureGroup(markersLayer.getLayers());
                     map.fitBounds(group.getBounds().pad(0.1));
-                    
+
                     showStatus(`✅ Successfully mapped ${validPoints} Astra Linux systems across ${countries.size} countries`);
                 } else {
                     showStatus('⚠️ No valid coordinate data found in JSON', true);
@@ -240,7 +240,7 @@ Example format:
   {
     "ip": "5.141.96.34",
     "country": "Russian Federation",
-    "city": "Uray", 
+    "city": "Uray",
     "latitude": 60.13044,
     "longitude": 64.78896,
     "port": 22,
@@ -249,7 +249,7 @@ Example format:
   },
   {
     "ip": "86.102.168.35",
-    "country": "Russian Federation", 
+    "country": "Russian Federation",
     "city": "Vladivostok",
     "latitude": 43.10562,
     "longitude": 131.87353,
@@ -260,7 +260,7 @@ Example format:
   {
     "ip": "89.223.126.175",
     "country": "Russian Federation",
-    "city": "Saint Petersburg", 
+    "city": "Saint Petersburg",
     "latitude": 59.93863,
     "longitude": 30.31413,
     "port": 22,
@@ -275,12 +275,12 @@ Example format:
         function clearAll() {
             document.getElementById('jsonInput').value = '';
             if (markersLayer) markersLayer.clearLayers();
-            
+
             document.getElementById('totalHosts').textContent = '0';
-            document.getElementById('uniqueCountries').textContent = '0'; 
+            document.getElementById('uniqueCountries').textContent = '0';
             document.getElementById('uniquePorts').textContent = '0';
             document.getElementById('riskScore').textContent = '0';
-            
+
             currentData = [];
             showStatus('🗑️ All data cleared');
         }

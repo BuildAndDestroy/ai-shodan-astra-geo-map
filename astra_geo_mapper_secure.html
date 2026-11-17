@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <!-- Security Headers -->
     <!-- Note: For production, CSP should be set via HTTP headers, not meta tags -->
     <!-- Meta tag CSP has limited browser support. Use server headers when possible. -->
-    <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'self'; 
-                   script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
-                   style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
-                   img-src 'self' data: https: blob:; 
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self';
+                   script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+                   style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+                   img-src 'self' data: https: blob:;
                    connect-src 'self' https://*.basemaps.cartocdn.com https://*.cartocdn.com;
                    font-src 'self' data: https:;
                    frame-ancestors 'none';">
@@ -19,11 +19,11 @@
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
-    
+
     <title>Astra Linux Threat Geo Mapper</title>
-    
+
     <!-- Leaflet CSS with SRI (Subresource Integrity) for supply chain attack protection -->
-    <link rel="stylesheet" 
+    <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
           integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw=="
           crossorigin="anonymous"
@@ -46,7 +46,7 @@ Example format:
 [
   {
     "ip": "5.141.96.34",
-    "country": "Russian Federation", 
+    "country": "Russian Federation",
     "city": "Uray",
     "latitude": 60.13044,
     "longitude": 64.78896,
@@ -87,7 +87,7 @@ Example format:
         </div>
 
         <div id="map"></div>
-        
+
         <div class="legend">
             <h4>🎯 Threat Levels</h4>
             <div class="legend-item">
@@ -118,7 +118,7 @@ Example format:
         // Security: Input size limits
         const MAX_INPUT_SIZE = 10 * 1024 * 1024; // 10MB
         const MAX_ARRAY_LENGTH = 100000; // Maximum number of data points
-        
+
         // Security: Logging function (can be extended to send to server)
         function logSecurityEvent(eventType, details) {
             const timestamp = new Date().toISOString();
@@ -140,7 +140,7 @@ Example format:
         function validateDataPoint(point, index) {
             const errors = [];
             const warnings = [];
-            
+
             // Type validation
             if (typeof point !== 'object' || point === null || Array.isArray(point)) {
                 errors.push(`Point ${index}: Must be an object`);
@@ -243,7 +243,7 @@ Example format:
             if (map && markersLayer) {
                 return;
             }
-            
+
             // Check if Leaflet is loaded - wait a bit if script is still loading
             if (typeof L === 'undefined') {
                 // Check if script tag exists
@@ -267,7 +267,7 @@ Example format:
                     return;
                 }
             }
-            
+
             try {
                 map = L.map('map', {
                     zoomControl: true,
@@ -292,11 +292,11 @@ Example format:
         function showStatus(message, isError = false) {
             const statusDiv = document.getElementById('status');
             statusDiv.textContent = ''; // Clear first
-            
+
             const messageDiv = document.createElement('div');
             messageDiv.className = isError ? 'error' : 'success';
             messageDiv.textContent = message; // Safe: uses textContent, not innerHTML
-            
+
             statusDiv.appendChild(messageDiv);
             setTimeout(() => {
                 if (statusDiv.contains(messageDiv)) {
@@ -307,7 +307,7 @@ Example format:
 
         function getThreatLevel(data) {
             let score = 0;
-            
+
             // Port-based scoring
             if (data.port === 22) score += 1;      // Standard SSH
             else if (data.port === 2222) score += 2; // Non-standard SSH
@@ -330,7 +330,7 @@ Example format:
         function getMarkerColor(threatLevel) {
             const colors = {
                 1: '#3742fa',  // Low - Blue
-                2: '#2ed573',  // Medium - Green  
+                2: '#2ed573',  // Medium - Green
                 3: '#ffa502',  // High - Orange
                 4: '#ff4757'   // Critical - Red
             };
@@ -341,7 +341,7 @@ Example format:
         function createPopupContent(data) {
             const threatLevel = getThreatLevel(data);
             const threatLabels = ['', 'Low', 'Medium', 'High', 'Critical'];
-            
+
             // Create DOM elements instead of template literals to prevent XSS
             const container = document.createElement('div');
             container.style.minWidth = '250px';
@@ -357,8 +357,8 @@ Example format:
             // Location
             const location = document.createElement('div');
             location.style.margin = '5px 0';
-            location.innerHTML = '<strong>📍 Location:</strong> ' + 
-                                escapeHtml(data.city || 'N/A') + ', ' + 
+            location.innerHTML = '<strong>📍 Location:</strong> ' +
+                                escapeHtml(data.city || 'N/A') + ', ' +
                                 escapeHtml(data.country || 'N/A');
             container.appendChild(location);
 
@@ -406,7 +406,7 @@ Example format:
 
         function processData() {
             const input = document.getElementById('jsonInput').value.trim();
-            
+
             if (!input) {
                 showStatus('❌ Please paste JSON data first', true);
                 return;
@@ -431,7 +431,7 @@ Example format:
                 };
 
                 let parsedData = JSON.parse(input, reviver);
-                
+
                 if (!Array.isArray(parsedData)) {
                     throw new Error('Data must be an array');
                 }
@@ -464,7 +464,7 @@ Example format:
 
                 // Log warnings (non-fatal)
                 if (validationWarnings.length > 0) {
-                    logSecurityEvent('VALIDATION_WARNINGS', { 
+                    logSecurityEvent('VALIDATION_WARNINGS', {
                         count: validationWarnings.length,
                         warnings: validationWarnings.slice(0, 5) // Log first 5
                     });
@@ -472,7 +472,7 @@ Example format:
 
                 // Log errors (fatal)
                 if (validationErrors.length > 0) {
-                    logSecurityEvent('VALIDATION_ERRORS', { 
+                    logSecurityEvent('VALIDATION_ERRORS', {
                         count: validationErrors.length,
                         errors: validationErrors.slice(0, 5) // Log first 5
                     });
@@ -483,7 +483,7 @@ Example format:
                 }
 
                 if (validatedData.length === 0) {
-                    const errorMsg = validationErrors.length > 0 
+                    const errorMsg = validationErrors.length > 0
                         ? `❌ No valid data points found. ${validationErrors.length} error(s) detected. Check console for details.`
                         : '❌ No valid data points found after validation';
                     showStatus(errorMsg, true);
@@ -502,7 +502,7 @@ Example format:
 
                 currentData = validatedData;
                 markersLayer.clearLayers();
-                
+
                 let validPoints = 0;
                 const countries = new Set();
                 const ports = new Set();
@@ -512,7 +512,7 @@ Example format:
                     try {
                         const threatLevel = getThreatLevel(point);
                         totalRiskScore += threatLevel;
-                        
+
                         const marker = L.circleMarker([point.latitude, point.longitude], {
                             color: '#ffffff',
                             fillColor: getMarkerColor(threatLevel),
@@ -523,12 +523,12 @@ Example format:
 
                         marker.bindPopup(createPopupContent(point));
                         markersLayer.addLayer(marker);
-                        
+
                         validPoints++;
                         if (point.country) countries.add(point.country);
                         if (point.port) ports.add(point.port);
                     } catch (error) {
-                        logSecurityEvent('MARKER_CREATION_ERROR', { 
+                        logSecurityEvent('MARKER_CREATION_ERROR', {
                             error: error.message,
                             point: { ip: point.ip, lat: point.latitude, lon: point.longitude }
                         });
@@ -539,7 +539,7 @@ Example format:
                 document.getElementById('totalHosts').textContent = validPoints;
                 document.getElementById('uniqueCountries').textContent = countries.size;
                 document.getElementById('uniquePorts').textContent = ports.size;
-                document.getElementById('riskScore').textContent = validPoints > 0 
+                document.getElementById('riskScore').textContent = validPoints > 0
                     ? (Math.round((totalRiskScore / validPoints) * 100) / 100).toFixed(2)
                     : '0';
 
@@ -551,7 +551,7 @@ Example format:
                             map.fitBounds(group.getBounds().pad(0.1));
                         }
                         showStatus(`✅ Successfully mapped ${validPoints} Astra Linux systems across ${countries.size} countries`);
-                        logSecurityEvent('MAP_GENERATED', { 
+                        logSecurityEvent('MAP_GENERATED', {
                             points: validPoints,
                             countries: countries.size
                         });
@@ -564,7 +564,7 @@ Example format:
                 }
 
             } catch (error) {
-                logSecurityEvent('JSON_PARSE_ERROR', { 
+                logSecurityEvent('JSON_PARSE_ERROR', {
                     error: error.message,
                     inputLength: input.length
                 });
@@ -577,7 +577,7 @@ Example format:
   {
     "ip": "5.141.96.34",
     "country": "Russian Federation",
-    "city": "Uray", 
+    "city": "Uray",
     "latitude": 60.13044,
     "longitude": 64.78896,
     "port": 22,
@@ -586,7 +586,7 @@ Example format:
   },
   {
     "ip": "86.102.168.35",
-    "country": "Russian Federation", 
+    "country": "Russian Federation",
     "city": "Vladivostok",
     "latitude": 43.10562,
     "longitude": 131.87353,
@@ -597,7 +597,7 @@ Example format:
   {
     "ip": "89.223.126.175",
     "country": "Russian Federation",
-    "city": "Saint Petersburg", 
+    "city": "Saint Petersburg",
     "latitude": 59.93863,
     "longitude": 30.31413,
     "port": 22,
@@ -618,12 +618,12 @@ Example format:
                     logSecurityEvent('CLEAR_LAYERS_ERROR', { error: error.message });
                 }
             }
-            
+
             document.getElementById('totalHosts').textContent = '0';
-            document.getElementById('uniqueCountries').textContent = '0'; 
+            document.getElementById('uniqueCountries').textContent = '0';
             document.getElementById('uniquePorts').textContent = '0';
             document.getElementById('riskScore').textContent = '0';
-            
+
             currentData = [];
             showStatus('🗑️ All data cleared');
         }
@@ -631,12 +631,12 @@ Example format:
         // Security: Use addEventListener instead of inline handlers
         document.addEventListener('DOMContentLoaded', function() {
             initMap();
-            
+
             // Attach event listeners
             document.getElementById('generateBtn').addEventListener('click', processData);
             document.getElementById('loadSampleBtn').addEventListener('click', loadSampleData);
             document.getElementById('clearBtn').addEventListener('click', clearAll);
-            
+
             logSecurityEvent('APP_INITIALIZED', { timestamp: new Date().toISOString() });
         });
     </script>
